@@ -718,6 +718,7 @@ function featureToExtrudedPolygon(feature, options) {
     geom.isBufferGeometry = true;
     geom.addAttribute('position', new THREE.BufferAttribute(new Float32Array(verticesWallsWithDup /* verticesRoofWithDup *//* newVertices */) /* vertices */, 3));
     geom.addAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvsWallsWithDup) /* vertices */, 2));
+    //console.log(uvsWallsWithDup);
     // geom.addAttribute('color', new THREE.BufferAttribute(colors, 3, true));
     /*   for (const attributeName of attributeNames) {
             const attribute = options.attributes[attributeName];

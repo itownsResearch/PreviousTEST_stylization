@@ -316,6 +316,11 @@ GuiTools.prototype.addGeometryLayerGUI = function addGeometryLayerGUI(layer, Sha
         }
         this.view.notifyChange(layer, true);
     }).bind(this));
+    
+    folder.add({ darkenBottom: ShadMatWalls.uniforms.darkenBottom.value == 1 ? true : false}, 'darkenBottom').onChange((function updateBottom(value) {
+      ShadMatWalls.uniforms.darkenBottom.value = value ? 1 : 0;
+      this.view.notifyChange(layer,true);
+    }).bind(this));
 
 };
 

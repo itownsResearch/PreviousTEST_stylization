@@ -46,6 +46,7 @@ const fragmentShader_walls = `
 #define MODE_UV      2
 uniform sampler2D texture_walls;
 uniform int mode;
+uniform int darkenBottom;
 uniform float texture_scale;
 varying vec2 vUv;
 uniform float opacity;
@@ -75,10 +76,11 @@ void main(){
     //if(dist < 200.) gl_FragColor = vec4(dist/200.,0.,0.,1.);
     if(dist < 200.) gl_FragColor = mix(gl_FragColor, vec4(1.,0.,0.,1.), 0.2);
 
-    
-
-   // gl_FragColor = vec4(1.,0.,0.,1.);
-}
+    if(darkenBottom == 1){
+     float darkenCoef = 1. + vUv.y / 20.; 
+     gl_FragColor.rgb *= darkenCoef;
+    }
+  }
 `;
 
 const fragmentShader_roof = `
@@ -88,6 +90,7 @@ const fragmentShader_roof = `
 #define MODE_UV      2
 uniform sampler2D texture_roof;
 uniform int mode;
+uniform int darkenBottom;
 uniform float texture_scale;
 varying vec2 vUv;
 uniform float opacity;
@@ -112,6 +115,7 @@ void main(){
 const fragmentShader_edges = `
 #include <logdepthbuf_pars_fragment>
 uniform float opacity;
+uniform int darkenBottom;
 uniform vec3 color;
 uniform float time;
 uniform vec3 currentPos;
@@ -137,19 +141,20 @@ texture_roof.wrapT = THREE.RepeatWrapping;
 let time = 0;
 let currentPos = new THREE.Vector3();
 
-function createMaterial(vShader, fShader) {
+function createMaterial(vShader, fShader, defaultColor) {
 
     // Default parameters taking into account by shaders in their initial state
 
     let uniforms = {
-        texture_roof: {type : 'sampler2D', value : texture_roof},       // Texture for modelisation of roof
-        texture_walls: {type : 'sampler2D', value : texture_walls},     // Texture for modelisation of walls
-        mode: {type: 'i', value: 0},                               // Shader mode : it's an integer between 0 and 1 : 0 = color mode, 1 = texture mode
-        color: {type: 'c', value: new THREE.Color('white')},       // Default color parameter
-        opacity: {type: 'f', value: 1.0},                          // Default opacity parameter
+        texture_roof: {type : 'sampler2D', value : texture_roof},   // Texture for modelisation of roof
+        texture_walls: {type : 'sampler2D', value : texture_walls}, // Texture for modelisation of walls
+        mode: {type: 'i', value: 0},                                // Shader mode : it's an integer between 0 and 1 : 0 = color mode, 1 = texture mode
+        color: {type: 'c', value: defaultColor},                    // Default color parameter
+        opacity: {type: 'f', value: 1.0},                           // Default opacity parameter
         texture_scale : {type: 'f', value: 0.01},                   // Scale factor on texture (float between 0.0 and 1.0)
         time       : {type: 'f', value: time},                      // time to create animation
-        currentPos:  new THREE.Uniform(currentPos)                  // Current position in the trace
+        currentPos:  new THREE.Uniform(currentPos),                 // Current position in the trace
+        darkenBottom: {type: 'i', value: 1},                        // Option to darken the bottom of buildings wall
     };
 
     let meshMaterial = new THREE.ShaderMaterial({
@@ -167,9 +172,9 @@ let resultoss;
 
 // One shaderMaterial for each type of geometries (edges, walls, roof) : in the whole, 3 shaders are needed.
 
-let ShadMatRoof = createMaterial(vertexShader, fragmentShader_roof);
-let ShadMatWalls = createMaterial(vertexShader, fragmentShader_walls);
-let ShadMatEdges = createMaterial(vertexShader, fragmentShader_edges);
+let ShadMatRoof = createMaterial(vertexShader, fragmentShader_roof, new THREE.Color(0XAF005F));
+let ShadMatWalls = createMaterial(vertexShader, fragmentShader_walls, new THREE.Color(0x782f56));
+let ShadMatEdges = createMaterial(vertexShader, fragmentShader_edges, new THREE.Color(0x4d1a36));
 
 // Function that takes a mesh as argument and returns it with a shader
 
