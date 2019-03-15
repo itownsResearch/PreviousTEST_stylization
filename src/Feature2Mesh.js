@@ -148,15 +148,15 @@ function addExtrudedPolygonSideFacesWithDup(vEdges, uvsEdges, uvs, arrVertices, 
             const uvCoordC = new itowns.Coordinates('EPSG:4978', vertices[indices[j - 3] * 3], vertices[indices[j - 3] * 3 + 1], vertices[indices[j - 3] * 3 + 2]).as('EPSG:4326');
             const uvCoordD = new itowns.Coordinates('EPSG:4978', vertices[indices[j] * 3], vertices[indices[j] * 3 + 1], vertices[indices[j] * 3 + 2]).as('EPSG:4326');
 
-            const h = uvCoordB._values[2] - uvCoordA._values[2];
+            const h = uvCoordA._values[2] - uvCoordB._values[2];// uvCoordB._values[2] - uvCoordA._values[2];
             const l = Math.sqrt((uvCoordD._values[0] - uvCoordB._values[0]) * (uvCoordD._values[0] - uvCoordB._values[0]) + (uvCoordB._values[1] * uvCoordB._values[1]) * (uvCoordD._values[1] * uvCoordD._values[1]));
 
+            uvs.push(0, h);
             uvs.push(0, 0);
-            uvs.push(0, h);
-            uvs.push(l, 0);
-            uvs.push(l, 0);
-            uvs.push(0, h);
             uvs.push(l, h);
+            uvs.push(l, h);
+            uvs.push(0, 0);
+            uvs.push(l, 0);
 
             // For lines:
             vEdges.push(vertices[indices[j - 5] * 3], vertices[indices[j - 5] * 3 + 1], vertices[indices[j - 5] * 3 + 2]);
@@ -182,15 +182,15 @@ function addExtrudedPolygonSideFacesWithDup(vEdges, uvsEdges, uvs, arrVertices, 
             const uvCoordC = new itowns.Coordinates('EPSG:4978', vertices[indices[j - 3] * 3], vertices[indices[j - 3] * 3 + 1], vertices[indices[j - 3] * 3 + 2]).as('EPSG:4326');
             const uvCoordD = new itowns.Coordinates('EPSG:4978', vertices[indices[j] * 3], vertices[indices[j] * 3 + 1], vertices[indices[j] * 3 + 2]).as('EPSG:4326');
 
-            const h = uvCoordB._values[2] - uvCoordA._values[2];
+            const h = uvCoordA._values[2] - uvCoordB._values[2];// uvCoordB._values[2] - uvCoordA._values[2];
             const l = Math.sqrt((uvCoordD._values[0] - uvCoordB._values[0]) * (uvCoordD._values[0] - uvCoordB._values[0]) + (uvCoordD._values[1] - uvCoordB._values[1]) * (uvCoordD._values[1] - uvCoordB._values[1]));
 
+            uvs.push(0, h);
             uvs.push(0, 0);
-            uvs.push(0, h);
-            uvs.push(l, 0);
-            uvs.push(l, 0);
-            uvs.push(0, h);
             uvs.push(l, h);
+            uvs.push(l, h);
+            uvs.push(0, 0);
+            uvs.push(l, 0);
 
             // For lines:
 
@@ -243,7 +243,7 @@ function featureToPoint(feature, options) {
 }
 
 var lineMaterial = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors });
-function featureToLine(feature, options) {
+function featureToLineSAVED(feature, options) {
     const ptsIn = feature.vertices;
     const normals = feature.normals;
     const vertices = new Float32Array(ptsIn.length);
@@ -304,6 +304,93 @@ function featureToLine(feature, options) {
             }
             geom.addAttribute('batchId', new THREE.BufferAttribute(batchIds, 1));
         }
+        return new THREE.Line(geom, lineMaterial);
+    }
+}
+
+
+
+function featureToLine(feature, options) {
+    const ptsIn = feature.vertices;
+    const normals = feature.normals;
+    const vertices = new Float32Array(ptsIn.length);
+    const colors = new Uint8Array(ptsIn.length);
+    const count = ptsIn.length / 3;
+
+    const batchIds = options.batchId ? new Uint32Array(count) : undefined;
+    let featureId = 0;
+
+    coordinatesToVertices(ptsIn, normals, vertices, options.altitude);
+    //console.log(vertices);
+    const geom = new THREE.BufferGeometry();
+
+    var verticesUnindexed = [];
+    var speed = [];
+
+    if (feature.geometry.length > 1) {
+        const countIndices = (count - feature.geometry.length) * 2;
+        const indices = new Uint16Array(countIndices);
+        let i = 0;
+        // Multi line case
+        for (const geometry of feature.geometry) {
+            const color = getProperty('color', options, randomColor, geometry.properties);
+            const start = geometry.indices[0].offset;
+            // To avoid integer overflow with indice value (16 bits)
+            if (start > 0xffff) {
+                console.warn('Feature to Line: integer overflow, too many points in lines');
+                break;
+            }
+            const count = geometry.indices[0].count;
+            const end = start + count;
+            fillColorArray(colors, count, color, start);
+            for (let j = start; j < end - 1; j++) {
+                if (j < 0xffff) {
+                    indices[i++] = j;
+                    indices[i++] = j + 1;
+
+                    // Modification for unindexed and multiple lines overlapping. We add also other attributes such as random speed
+                    verticesUnindexed.push(vertices[j*3],vertices[j*3+1],vertices[j*3+2], vertices[(j+1)*3],vertices[(j+1)*3+1],vertices[(j+1)*3+2] );
+                    speed.push(Math.random(),Math.random());
+                    // We deplicate with noise the lines
+                    var nDup = 12;
+                    var coefNoise = 4;
+                    for(var k = 0; k < nDup; ++k){
+                        verticesUnindexed.push(vertices[j*3] + Math.random() * coefNoise,vertices[j*3+1]+ Math.random() * coefNoise,vertices[j*3+2] + Math.random() * coefNoise,
+                         vertices[(j+1)*3]+ Math.random() * coefNoise,vertices[(j+1)*3+1]+ Math.random() * coefNoise,vertices[(j+1)*3+2] + Math.random() * coefNoise);     
+                        speed.push(Math.random(),Math.random());
+                    }
+                } else {
+                    break;
+                }
+            }
+            if (batchIds) {
+                const id = options.batchId(geometry.properties, featureId);
+                for (let i = start; i < end; i++) {
+                    batchIds[i] = id;
+                }
+                featureId++;
+            }
+        }
+        //geom.addAttribute('position', new THREE.BufferAttribute(vertices, 3));
+        geom.addAttribute('position', new THREE.BufferAttribute(new Float32Array(verticesUnindexed), 3));
+        geom.addAttribute('speed', new THREE.BufferAttribute(new Float32Array(speed), 1));
+       // geom.addAttribute('color', new THREE.BufferAttribute(colors, 3, true));
+        if (batchIds) { geom.addAttribute('batchId', new THREE.BufferAttribute(batchIds, 1)); }
+       // geom.setIndex(new THREE.BufferAttribute(indices, 1));
+        //console.log(geom);
+        return new THREE.LineSegments(geom, /*materialLiness*/ lineMaterial);
+    } else {
+        const color = getProperty('color', options, randomColor, feature.geometry.properties);
+        fillColorArray(colors, count, color);
+        geom.addAttribute('color', new THREE.BufferAttribute(colors, 3, true));
+        if (batchIds) {
+            const id = options.batchId(feature.geometry.properties, featureId);
+            for (let i = 0; i < count; i++) {
+                batchIds[i] = id;
+            }
+            geom.addAttribute('batchId', new THREE.BufferAttribute(batchIds, 1));
+        }
+        
         return new THREE.Line(geom, lineMaterial);
     }
 }

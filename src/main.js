@@ -6,7 +6,7 @@ import {roads, materialLiness} from './layers/roads'
 import {bati, ShadMatRoof, ShadMatWalls, ShadMatEdges} from './layers/bati'
 
 var viewerDiv = document.getElementById('viewerDiv');
-var position = new itowns.Coordinates('WGS84', 2.352787, 48.858595 , 1500);
+var position = new itowns.Coordinates('WGS84', 2.24485, 48.88983 , 1200);
 var view = new itowns.GlobeView(viewerDiv, position);
 const menuGlobe = new GuiTools('menuDiv', view);
 /*
@@ -41,6 +41,13 @@ var elevationLayer = new itowns.ElevationLayer('MNT_WORLD', {
 view.addLayer(DARK);
 view.addLayer(roads);
 view.addLayer(bati);
+
+
+view.addEventListener(itowns.GLOBE_VIEW_EVENTS.GLOBE_INITIALIZED, function globeInitialized() {
+  // eslint-disable-next-line no-console
+  console.info('Globe initialized');
+  view.controls.setTilt(60, true);
+});
 
 var time = 0;
 var buildingTime = 0;

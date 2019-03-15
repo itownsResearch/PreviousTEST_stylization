@@ -77,8 +77,8 @@ void main(){
     if(dist < 200.) gl_FragColor = mix(gl_FragColor, vec4(1.,0.,0.,1.), 0.2);
 
     if(darkenBottom == 1){
-     float darkenCoef = 1. + vUv.y / 20.; 
-     gl_FragColor.rgb *= darkenCoef;
+     float darkenCoef = min(vUv.y, 50.)  / 50.; 
+     gl_FragColor.rgb *= min(0.2 + darkenCoef, 1.);
     }
   }
 `;
